@@ -1,0 +1,116 @@
+class Node:
+    def __init__(self, data, level, fval):
+        self.data = data
+        self.level = level
+        self.fval = fval
+ 
+    def generate_child(self):
+        position = self.find(self.data, '_')
+        if position is None:
+            return [] 
+
+        x, y = position
+        val_list = [[x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y]]
+        children = []
+        for i in val_list:
+            child = self.shuffle(self.data, x, y, i[0], i[1])
+            if child is not None:
+                child_node = Node(child, self.level + 1, 0)
+                children.append(child_node)
+        return children
+
+    def shuffle(self, puz, x1, y1, x2, y2):
+        if 0 <= x2 < len(puz) and 0 <= y2 < len(puz):
+            temp_puz = self.copy(puz)
+            temp = temp_puz[x2][y2]
+            temp_puz[x2][y2] = temp_puz[x1][y1]
+            temp_puz[x1][y1] = temp
+            return temp_puz
+        else:
+            return None
+
+    def copy(self, root):
+        return [row[:] for row in root]
+
+    def find(self, puz, x):
+        for i in range(len(self.data)):
+            for j in range(len(self.data)):
+                if puz[i][j] == x:
+                    return i, j
+        return None  # Return None if not found
+
+
+class Puzzle:
+    def __init__(self, size):
+        self.n = size
+        self.open = []
+        self.closed = []
+
+    def accept(self):
+        puz = []
+        for i in range(self.n):
+            temp = input(f"Enter row {i + 1} (use '_' for blank space): ").split(" ")
+            if len(temp) != self.n:
+                raise ValueError(f"Row must contain exactly {self.n} elements.")
+            puz.append(temp)
+        return puz
+
+    def f(self, start, goal):
+        return self.h(start.data, goal) + start.level
+
+    def h(self, start, goal):
+        temp = 0
+        d={}
+        for i in range(self.n):
+          for j in range(self.n):
+            s=start[i][j]
+            e=goal[i][j]
+            if s not in d:
+              d[s]=[[i,j],[]]
+            else:
+              d[s][0]=[i,j]
+            if e not in d:
+              d[e]=[[],[i,j]]
+            else:
+              d[e][1]=[i,j]
+        for i in d:
+          temp+=abs(d[i][0][0]-d[i][1][0])+abs(d[i][0][1]-d[i][1][1])
+        return temp
+    def process(self):
+        print("Enter the start state matrix \n")
+        start = self.accept()
+        print("Enter the goal state matrix \n")
+        goal = self.accept()
+
+        start_node = Node(start, 0, 0)
+        start_node.fval = self.f(start_node, goal)
+        self.open.append(start_node)
+
+        while True:
+            if not self.open:
+                print("No solution exists")
+                return
+
+            cur = self.open[0]
+            print("\nCurrent State:")
+            for row in cur.data:
+                print(" ".join(row))
+
+            if self.h(cur.data, goal) == 0:
+                print("Goal state reached!")
+                break
+
+            for child in cur.generate_child():
+                child.fval = self.f(child, goal)
+                self.open.append(child)
+
+            self.closed.append(cur)
+            del self.open[0]
+
+
+            self.open.sort(key=lambda x: x.fval)
+
+
+
+puz = Puzzle(3)
+puz.process()
